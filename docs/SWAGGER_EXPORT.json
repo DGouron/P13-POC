@@ -1,0 +1,417 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Chat POC Backend API",
+    "description": "Backend REST API pour un système de chat temps réel avec notifications email asynchrones.\n\n## Fonctionnalités principales\n- **Chat temps réel** : WebSocket pour communication instantanée\n- **Notifications email** : Envoi automatique d'emails après chaque message\n- **Architecture DDD** : Domain-Driven Design avec séparation claire des couches\n- **Base de données H2** : Stockage en mémoire pour le POC\n\n## WebSocket\n- **Endpoint** : `/ws`\n- **Topic pattern** : `/topic/chat/{chatId}`\n- **Protocole** : STOMP over SockJS\n\n## Règles métier\n- Chat : nom 3-100 caractères, max 50 participants\n- Message : contenu 1-1000 caractères\n- Participant : nom 2-50 caractères, email valide\n\n## CORS\nTous les endpoints acceptent les requêtes cross-origin pour faciliter l'intégration frontend.",
+    "contact": {
+      "name": "Équipe Chat POC",
+      "email": "dev@chatpoc.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Serveur de développement"
+    },
+    {
+      "url": "https://api.chatpoc.com",
+      "description": "Serveur de production (exemple)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Chat Management",
+      "description": "API pour la gestion des chats et messages"
+    }
+  ],
+  "paths": {
+    "/api/chats": {
+      "get": {
+        "tags": ["Chat Management"],
+        "summary": "Lister tous les chats",
+        "description": "Récupère la liste de tous les chats existants",
+        "operationId": "getAllChats",
+        "responses": {
+          "200": {
+            "description": "Liste des chats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Chat Management"],
+        "summary": "Créer un nouveau chat",
+        "description": "Crée un nouveau chat avec un nom et un créateur. Le créateur devient automatiquement participant du chat.",
+        "operationId": "createChat",
+        "requestBody": {
+          "description": "Informations pour créer le chat",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChatRequest"
+              },
+              "examples": {
+                "Création chat": {
+                  "value": {
+                    "chatName": "Mon Premier Chat",
+                    "creatorName": "John Doe",
+                    "creatorEmail": "john@example.com"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Chat créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDTO"
+                },
+                "examples": {
+                  "Chat créé": {
+                    "value": {
+                      "id": "123e4567-e89b-12d3-a456-426614174000",
+                      "name": "Mon Premier Chat",
+                      "participants": [
+                        {
+                          "name": "John Doe",
+                          "email": "john@example.com"
+                        }
+                      ],
+                      "messages": [],
+                      "createdAt": "2023-12-01T10:30:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Erreur validation": {
+                    "value": {
+                      "message": "Chat name must be between 3 and 100 characters",
+                      "timestamp": "2023-12-01T10:30:00"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/{chatId}": {
+      "get": {
+        "tags": ["Chat Management"],
+        "summary": "Récupérer un chat par ID",
+        "description": "Récupère les détails complets d'un chat incluant participants et messages",
+        "operationId": "getChat",
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "description": "ID unique du chat",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Chat non trouvé"
+          }
+        }
+      }
+    },
+    "/api/chats/{chatId}/messages": {
+      "get": {
+        "tags": ["Chat Management"],
+        "summary": "Récupérer les messages récents",
+        "description": "Récupère les N derniers messages d'un chat, triés par ordre chronologique",
+        "operationId": "getRecentMessages",
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "description": "ID du chat",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Nombre maximum de messages à récupérer",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            },
+            "example": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages récupérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDTO"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chat non trouvé"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Chat Management"],
+        "summary": "Envoyer un message",
+        "description": "Envoie un message dans un chat. Déclenche automatiquement les notifications WebSocket et email.",
+        "operationId": "sendMessage",
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "description": "ID du chat",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "requestBody": {
+          "description": "Contenu du message à envoyer",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              },
+              "examples": {
+                "Envoi message": {
+                  "value": {
+                    "content": "Bonjour tout le monde !",
+                    "senderName": "Jane Smith",
+                    "senderEmail": "jane@example.com"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Message envoyé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDTO"
+                },
+                "examples": {
+                  "Message envoyé": {
+                    "value": {
+                      "id": "456e7890-e89b-12d3-a456-426614174000",
+                      "content": "Bonjour tout le monde !",
+                      "senderName": "Jane Smith",
+                      "senderEmail": "jane@example.com",
+                      "timestamp": "2023-12-01T10:35:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chat non trouvé ou données invalides"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatDTO": {
+        "type": "object",
+        "description": "Représentation d'un chat avec ses participants et messages",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifiant unique du chat",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom du chat",
+            "example": "Mon Premier Chat"
+          },
+          "participants": {
+            "type": "array",
+            "description": "Liste des participants du chat",
+            "items": {
+              "$ref": "#/components/schemas/ParticipantDTO"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "description": "Liste des messages du chat",
+            "items": {
+              "$ref": "#/components/schemas/MessageDTO"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date et heure de création du chat",
+            "example": "2023-12-01T10:30:00"
+          }
+        }
+      },
+      "MessageDTO": {
+        "type": "object",
+        "description": "Représentation d'un message dans un chat",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifiant unique du message",
+            "example": "456e7890-e89b-12d3-a456-426614174000"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenu du message",
+            "example": "Bonjour tout le monde !"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Nom de l'expéditeur",
+            "example": "Jane Smith"
+          },
+          "senderEmail": {
+            "type": "string",
+            "description": "Email de l'expéditeur",
+            "example": "jane@example.com"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date et heure d'envoi du message",
+            "example": "2023-12-01T10:35:00"
+          }
+        }
+      },
+      "ParticipantDTO": {
+        "type": "object",
+        "description": "Représentation d'un participant dans un chat",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nom du participant",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email du participant",
+            "example": "john@example.com"
+          }
+        }
+      },
+      "CreateChatRequest": {
+        "type": "object",
+        "description": "Requête pour créer un nouveau chat",
+        "required": ["chatName", "creatorName", "creatorEmail"],
+        "properties": {
+          "chatName": {
+            "type": "string",
+            "description": "Nom du chat",
+            "minLength": 3,
+            "maxLength": 100,
+            "example": "Mon Premier Chat"
+          },
+          "creatorName": {
+            "type": "string",
+            "description": "Nom du créateur du chat",
+            "minLength": 2,
+            "maxLength": 50,
+            "example": "John Doe"
+          },
+          "creatorEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email du créateur du chat",
+            "example": "john@example.com"
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "description": "Requête pour envoyer un message dans un chat",
+        "required": ["content", "senderName", "senderEmail"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Contenu du message",
+            "maxLength": 1000,
+            "example": "Bonjour tout le monde !"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Nom de l'expéditeur",
+            "minLength": 2,
+            "maxLength": 50,
+            "example": "Jane Smith"
+          },
+          "senderEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email de l'expéditeur",
+            "example": "jane@example.com"
+          }
+        }
+      }
+    }
+  }
+}

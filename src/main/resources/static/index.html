@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat POC Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Chat POC Backend</h1>
+        
+        <div class="success-box">
+            <h3>✅ Backend en ligne !</h3>
+            <p>Le backend Chat POC fonctionne correctement.</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📚 Documentation API</h3>
+            <ul>
+                <li><strong>Swagger UI :</strong> <a href="/swagger-ui.html" target="_blank">/swagger-ui.html</a></li>
+                <li><strong>OpenAPI JSON :</strong> <a href="/v3/api-docs" target="_blank">/v3/api-docs</a></li>
+                <li><strong>Console H2 :</strong> <a href="/h2-console" target="_blank">/h2-console</a></li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>🔗 URLs de l'API</h3>
+            <p>Base URL : <code>http://localhost:8080/api/chats</code></p>
+            <ul>
+                <li><code>GET /api/chats</code> - Lister tous les chats</li>
+                <li><code>POST /api/chats</code> - Créer un chat</li>
+                <li><code>GET /api/chats/{id}</code> - Récupérer un chat</li>
+                <li><code>POST /api/chats/{id}/messages</code> - Envoyer un message</li>
+                <li><code>GET /api/chats/{id}/messages</code> - Messages récents</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>🌐 WebSocket</h3>
+            <p>Endpoint : <code>ws://localhost:8080/ws</code></p>
+            <p>Topic : <code>/topic/chat/{chatId}</code></p>
+        </div>
+
+        <div class="error-box">
+            <h3>⚠️ Frontend Angular</h3>
+            <p>Si tu vois cette page, c'est que ton frontend Angular n'est pas correctement configuré ou déployé.</p>
+            <p><strong>Solutions :</strong></p>
+            <ul>
+                <li>Utilise <code>http://localhost:8080/api/chats</code> comme base URL</li>
+                <li>Assure-toi que ton frontend Angular est sur un port différent (ex: 4200)</li>
+                <li>Vérifie les URLs dans ton service Angular</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
